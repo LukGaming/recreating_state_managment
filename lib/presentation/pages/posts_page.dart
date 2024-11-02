@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:utilizando_gerenciamendo_estado/presentation/controllers/posts_controller.dart';
 import 'package:utilizando_gerenciamendo_estado/presentation/state/posts_state.dart';
@@ -99,29 +101,44 @@ class CounterWidget extends StatefulWidget {
 }
 
 class _CounterWidgetState extends State<CounterWidget> {
-  final counterController = StateValueNotifier(0);
+  final counterController = CounterBloc();
+
+  StreamSubscription<int>? _subscription;
+
   @override
   void initState() {
-    counterController.addListener(_callback);
+    _subscription = counterController.streamController.stream.listen(_callback);
     super.initState();
   }
 
-  void _callback() {
+  void _callback(int newState) {
     setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    print("Rebuildando widget do counter");
     return Column(
       children: [
         Text("CounterValue: ${counterController.state}"),
         ElevatedButton(
-            onPressed: () {
-              counterController.state++;
-            },
-            child: const Text("Increment"))
+          onPressed: () {
+            counterController.update(10);
+          },
+          child: const Text("Increment"),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            counterController.dispose();
+          },
+          child: const Text("DisposeBloc"),
+        )
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 }

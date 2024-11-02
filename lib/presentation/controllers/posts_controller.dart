@@ -104,3 +104,93 @@ extension ReactiveInt on int {
     return StateValueNotifier(this);
   }
 }
+
+abstract class TrackeableBloc<E extends Exception, State extends Object> {
+  BlocError<E, State> onError(E exception, State s);
+}
+
+class Bloc<State extends Object> {
+  State state;
+
+  Bloc(this.state) {
+    state = this.state;
+    streamController.add(state);
+    onCreation(state);
+  }
+
+  StreamController<State> streamController = StreamController<State>();
+
+  void update(State newState) {
+    try {
+      state = newState;
+      streamController.add(state);
+      onUpdate(newState);
+    } catch (e) {
+      print("erro aqui em cima: $e");
+      if (e is StateError) {
+        onError(
+            Exception("Atualizando valor do BLOC após o dispose..."), newState);
+        return;
+      }
+      onError(e, newState);
+    }
+  }
+
+  BlocError<dynamic, State> onError(dynamic exception, State s) {
+    return BlocError(exception: exception, state: state);
+  }
+
+  State onCreation(State initialState) {
+    return initialState;
+  }
+
+  State onUpdate(State newState) {
+    return newState;
+  }
+
+  void dispose() {
+    streamController.close();
+    onDispose();
+  }
+
+  void onDispose() {}
+}
+
+class BlocError<E extends dynamic, S extends Object> {
+  final E exception;
+  final S state;
+
+  BlocError({required this.exception, required this.state});
+}
+
+class CounterBloc extends Bloc<int> {
+  CounterBloc() : super(0);
+
+  void increment() {
+    update(state++);
+  }
+
+  @override
+  BlocError<dynamic, int> onError(dynamic exception, int s) {
+    print("Gerando erro: $exception");
+    return super.onError(exception, s);
+  }
+
+  @override
+  int onCreation(int initialState) {
+    print("Iniciando estado com: $initialState");
+    return super.onCreation(initialState);
+  }
+
+  @override
+  int onUpdate(int newState) {
+    print("Estado atualizado para: $newState");
+    return super.onUpdate(newState);
+  }
+
+  @override
+  void onDispose() {
+    print("Disposing...");
+    super.onDispose();
+  }
+}
